@@ -26,21 +26,19 @@ class MyBot(commands.Bot):
         print(f"Logged in as {self.user}.")
 
     async def load_cogs(self):
-
-        for dir_path in COGS_PATH:
-            sys.path.insert(0, dir_path)
-            for file in os.listdir(dir_path):
-                if file.endswith(".py"):
-                    extension_name = file[:-3]
-                    try:
-                        await self.load_extension(extension_name)
-                    except commands.ExtensionError as e:
-                        sys.exit(f"Error loading extension: {e}")
-                    except Exception as f:
-                        sys.exit(str(f))
-                    else:
-                        print(f"{self.description}: {extension_name} loaded")
-            sys.path.pop(0)
+        sys.path.insert(0, COGS_PATH)
+        for file in os.listdir(COGS_PATH):
+            if file.endswith(".py"):
+                extension_name = file[:-3]
+                try:
+                    await self.load_extension(extension_name)
+                except commands.ExtensionError as e:
+                    sys.exit(f"Error loading extension: {e}")
+                except Exception as f:
+                    sys.exit(str(f))
+                else:
+                    print(f"{self.description}: {extension_name} loaded")
+        sys.path.pop(0)
 
     async def setup_hook(self):
         """ Runs when the bot first starts up """
