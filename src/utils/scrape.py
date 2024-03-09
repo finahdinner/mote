@@ -10,7 +10,8 @@ from src.utils.globals import (
     CHROMEDRIVER_PATH,
     _7TV_URL_REGEX,
     LARGE_IMAGE_XPATH,
-    IMAGES_PATH
+    IMAGES_PATH,
+    EMOTE_URL_REGEX
 )
 import re
 import requests
@@ -49,8 +50,16 @@ def get_image_url(driver: webdriver.Chrome, page_url: str) -> tuple[str, str]:
     return image_url, ""
 
 
-def download_image(url: str) -> tuple[str, str]:
-    response = requests.get(url)
+def download_image(url: str, size=4) -> tuple[str, str]:
+    results = re.search(EMOTE_URL_REGEX, url)
+    if not results:
+        return "", "Not a valid image URL."
+    
+    # now modify the url to factor in the specified size (4x, 2x, 1x) of the image
+    pattern, replacement = r"/(\d)x\.webp$", f"/{size}x.webp"
+    new_url = re.sub(pattern, replacement, url)
+
+    response = requests.get(new_url)
     if response.status_code != 200:
         return "", "Unable to download image."
     file_extension = url.split(".")[-1] 
@@ -59,7 +68,6 @@ def download_image(url: str) -> tuple[str, str]:
         img.write(response.content)
     return downloaded_path, ""
     
-
 
 
 page_url = "https://7tv.app/emotes/6042089e77137b000de9e669"
