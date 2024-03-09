@@ -12,6 +12,7 @@ class ExecutionOutcome(Enum):
 class DiscordCtx:
     def __init__(self, ctx: commands.Context):
         self.ctx = ctx
+        self.has_emoji_perms = self.ctx.message.author.guild_permissions.manage_emojis
         self.bot_message = None # this will be updated to whatever the bot eventually sends
 
     async def send_msg(self, message) -> None:
@@ -22,6 +23,9 @@ class DiscordCtx:
             return
         reply_msg = DiscordCtx.emojify_str(message, exec_outcome)
         await self.curr_message.edit(content=reply_msg)
+
+    async def reply_to_user(self, message, ping=False) -> None:
+        await self.ctx.reply(message. mention_author==ping)
 
     @staticmethod
     def emojify_str(msg, exec_outcome: ExecutionOutcome):

@@ -14,11 +14,15 @@ class Commands(commands.Cog):
 
     @commands.command()
     async def grab(self, ctx):
-        ...
+        contxt = DiscordCtx(ctx)
+        if not contxt.has_emoji_perms:
+            return await contxt.reply_to_user("You do not have sufficient permissions to use this command.")
 
     @commands.command()
     async def upload(self, ctx):
-        ...
+        contxt = DiscordCtx(ctx)
+        if not contxt.has_emoji_perms:
+            return await contxt.reply_to_user("You do not have sufficient permissions to use this command.")
 
     @commands.command()
     async def convert(self, ctx):
