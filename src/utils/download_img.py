@@ -69,8 +69,8 @@ def download_image(url: str, size=4) -> tuple[str, str]:
     return downloaded_path, ""
     
 
-
-page_url = "https://7tv.app/emotes/6042089e77137b000de9e669"
-image_url = get_image_url(DRIVER, page_url)[0]
-downloaded_path = download_image(image_url)
-print(downloaded_path)
+# # for testing
+# page_url = "https://7tv.app/emotes/6042089e77137b000de9e669"
+# image_url = get_image_url(DRIVER, page_url)[0]
+# downloaded_path = download_image(image_url)
+# print(downloaded_path)
