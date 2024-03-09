@@ -12,6 +12,7 @@ load_dotenv()
 DEBUG = os.environ.get("DEBUG", "False")
 BOT_TOKEN = os.environ["DISCORD_MOTE_BOT_TOKEN"]
 BOT_TEST_TOKEN = os.environ["BOT_TEST_TOKEN"]
+CHROMEDRIVER_PATH = os.environ["CHROMEDRIVER_PATH"]
 
 """ Absolute file paths """
 ENV_PY_PATH = Path(__file__)
@@ -22,3 +23,7 @@ COGS_PATH = os.path.join(SRC_DIR_PATH, "cogs")
 """ Bot """
 BOT_PREFIX = "mote/"
 DISCORD_INVITE_LINK = os.environ["DISCORD_INVITE_LINK"]
+
+""" 7TV-Specific """
+_7TV_URL_REGEX = r"^(https://|http://)7tv.app/emotes/([\w]+)$"
+LARGE_IMAGE_XPATH = r'//*[@id="app"]/main/main/main/section/div[4]'
