@@ -19,6 +19,7 @@ ENV_PY_PATH = Path(__file__)
 SRC_DIR_PATH = ENV_PY_PATH.parent.parent
 PROJECT_ROOT_PATH = SRC_DIR_PATH.parent
 COGS_PATH = os.path.join(SRC_DIR_PATH, "cogs")
+IMAGES_PATH = os.path.join(SRC_DIR_PATH, "images")
 
 """ Bot """
 BOT_PREFIX = "mote/"

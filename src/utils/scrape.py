@@ -6,8 +6,15 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from fake_useragent import UserAgent
-from src.utils.globals import CHROMEDRIVER_PATH, _7TV_URL_REGEX, LARGE_IMAGE_XPATH
+from src.utils.globals import (
+    CHROMEDRIVER_PATH,
+    _7TV_URL_REGEX,
+    LARGE_IMAGE_XPATH,
+    IMAGES_PATH
+)
 import re
+import requests
+import os
 
 
 """ Selenium Settings"""
@@ -42,10 +49,20 @@ def get_image_url(driver: webdriver.Chrome, page_url: str) -> tuple[str, str]:
     return image_url, ""
 
 
-def download_image(url: str):
-    ...
+def download_image(url: str) -> tuple[str, str]:
+    response = requests.get(url)
+    if response.status_code != 200:
+        return "", "Unable to download image."
+    file_extension = url.split(".")[-1] 
+    downloaded_path = os.path.join(IMAGES_PATH, f"download.{file_extension}")
+    with open(downloaded_path, "wb") as img:
+        img.write(response.content)
+    return downloaded_path, ""
+    
 
 
 
-
-get_image_url(DRIVER, "https://7tv.app/emotes/6042089e77137b000de9e669")
+page_url = "https://7tv.app/emotes/6042089e77137b000de9e669"
+image_url = get_image_url(DRIVER, page_url)[0]
+downloaded_path = download_image(image_url)
+print(downloaded_path)
