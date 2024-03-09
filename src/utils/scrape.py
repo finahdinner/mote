@@ -23,22 +23,28 @@ s = Service(CHROMEDRIVER_PATH)
 DRIVER = webdriver.Chrome(service=s, options=WINDOW_OPTIONS)
 
 
-def get_image_url(driver: webdriver.Chrome, page_url: str):
+def get_image_url(driver: webdriver.Chrome, page_url: str) -> tuple[str, str]:
+    """ returns (image_url: str, error_message: str) """
     results = re.search(_7TV_URL_REGEX, page_url)
     if not results:
-        return "Not a valid 7tv URL."
+        return "", "Not a valid 7tv URL."
     driver.get(page_url)
     wait = WebDriverWait(driver, 8)
     try:
         image_div = wait.until(EC.presence_of_element_located((By.XPATH, LARGE_IMAGE_XPATH)))
     except TimeoutException:
-        return "Page will not load."
+        return "", "Page will not load."
     except NoSuchElementException:
-        return "Image not found on the page."
+        return "", "Image not found on the page."
     image_url = image_div.find_element(By.TAG_NAME, 'img').get_attribute('src')
     if not image_url:
-        return "Image not found on the page."
-    return image_url
+        return "", "Image not found on the page."
+    return image_url, ""
+
+
+def download_image(url: str):
+    ...
+
 
 
 
