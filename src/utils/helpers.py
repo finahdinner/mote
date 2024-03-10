@@ -1,4 +1,5 @@
 from discord.ext import commands
+import discord
 from enum import Enum
 
 
@@ -26,6 +27,25 @@ class DiscordCtx:
 
     async def reply_to_user(self, message, ping=False) -> None:
         await self.ctx.reply(message. mention_author==ping)
+
+    async def upload_emoji_to_server(self, emote_name, image_path) -> str|list:
+        """ returns (is_uploaded: bool, ) """
+        if not self.has_emoji_perms:
+            return "You do not have sufficient permissions to use this command."
+        if not self.ctx.guild:
+            return "Guild somehow not found??? Internal server error!!"
+        try:
+            with open(image_path, "rb") as img:
+                image = img.read()
+            await self.ctx.guild.create_custom_emoji(name=emote_name, image=image)
+        except discord.errors.HTTPException as e:
+            if 'error code: 30008' in e.args[0]: # if max number of emojis reached
+                return "Maximum number of emojis reached."
+            elif 'error code: 50138' in e.args[0]: # if image too big, return the list
+                return e.args[0]
+            else:
+                return "Unknown HTTP error - unable to upload emoji to Discord."
+        return ""
 
     @staticmethod
     def emojify_str(msg, exec_outcome: ExecutionOutcome):

@@ -4,7 +4,6 @@ import textwrap
 from src.utils.globals import DISCORD_INVITE_LINK, BOT_PREFIX
 from src.utils.helpers import DiscordCtx
 from src.utils.download_img import get_image_url, download_image
-from src.utils.upload_img import upload_image_to_discord
 
 
 class Commands(commands.Cog):
@@ -38,9 +37,15 @@ class Commands(commands.Cog):
                 else:
                     await contxt.edit_msg(f"{err_message}. Attempting a new emoji size...")
                     continue
-            is_uploaded, err_message = upload_image_to_discord(img_path)
-            if is_uploaded:
+            error = await contxt.upload_emoji_to_server(img_path, emote_name)
+            if not error:
                 return await contxt.edit_msg("Success! Emoji uploaded to Discord.")
+            elif isinstance(error, list): # image too large
+                if size == 1:
+                    return await contxt.edit_msg("All emoji sizes were too large to upload to Discord.")
+                else: continue
+            else: # any error other than the emoji being too big
+                return await contxt.edit_msg(error)
 
         return await contxt.edit_msg("Unable to upload emoji to Discord.")
 
