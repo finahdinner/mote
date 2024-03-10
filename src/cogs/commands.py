@@ -1,8 +1,10 @@
 from discord.ext import commands
 import discord
+import textwrap
 from src.utils.globals import DISCORD_INVITE_LINK, BOT_PREFIX
 from src.utils.helpers import DiscordCtx
-import textwrap
+from src.utils.download_img import get_image_url, download_image
+from src.utils.upload_img import upload_image_to_discord
 
 
 class Commands(commands.Cog):
@@ -23,6 +25,26 @@ class Commands(commands.Cog):
         
         await contxt.send_msg("Extracting emoji info, bear with me...")
 
+        img_url, err_message = get_image_url(page_url)
+        if not img_url:
+            return await contxt.reply_to_user(err_message)
+    
+        # try to download each of the sizes (4x, 3x, 2x, 1x) and try to upload each to Discord
+        for size in range(4, 0, 1):
+            img_path, err_message = download_image(img_url, size=size)
+            if not img_path: # if unable to download
+                if size == 1:
+                    return await contxt.edit_msg(err_message)
+                else:
+                    await contxt.edit_msg(f"{err_message}. Attempting a new emoji size...")
+                    continue
+            is_uploaded, err_message = upload_image_to_discord(img_path)
+            if is_uploaded:
+                return await contxt.edit_msg("Success! Emoji uploaded to Discord.")
+
+        return await contxt.edit_msg("Unable to upload emoji to Discord.")
+
+
     @commands.command()
     async def upload(self, ctx, image_file: discord.Attachment, emote_name):
         contxt = DiscordCtx(ctx)
@@ -37,9 +59,9 @@ class Commands(commands.Cog):
 
 
     @commands.command()
-    async def convert(self, ctx):
+    async def convert(self, ctx, image_file: discord.Attachment, emote_name):
         """ Alias for mote/upload """
-        await self.upload(ctx)
+        await self.upload(ctx, image_file, emote_name)
 
     @commands.command()
     async def help(self, ctx):

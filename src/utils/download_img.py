@@ -31,13 +31,13 @@ s = Service(CHROMEDRIVER_PATH)
 DRIVER = webdriver.Chrome(service=s, options=WINDOW_OPTIONS)
 
 
-def get_image_url(driver: webdriver.Chrome, page_url: str) -> tuple[str, str]:
+def get_image_url(page_url: str) -> tuple[str, str]:
     """ returns (image_url: str, error_message: str) """
     results = re.search(_7TV_URL_REGEX, page_url)
     if not results:
         return "", "Not a valid 7tv URL."
-    driver.get(page_url)
-    wait = WebDriverWait(driver, 8)
+    DRIVER.get(page_url)
+    wait = WebDriverWait(DRIVER, 8)
     try:
         image_div = wait.until(EC.presence_of_element_located((By.XPATH, LARGE_IMAGE_XPATH)))
     except TimeoutException:
@@ -71,6 +71,6 @@ def download_image(url: str, size=4) -> tuple[str, str]:
 
 # # for testing
 # page_url = "https://7tv.app/emotes/6042089e77137b000de9e669"
-# image_url = get_image_url(DRIVER, page_url)[0]
+# image_url = get_image_url(page_url)[0]
 # downloaded_path = download_image(image_url)
 # print(downloaded_path)

@@ -1,8 +1,3 @@
-"""
-Accesses all required environment variables from the .env file
-Also creates absolute paths for all important directories and folders
-"""
-
 from dotenv import load_dotenv
 import os
 from pathlib import Path
