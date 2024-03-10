@@ -30,7 +30,6 @@ class DiscordCtx:
         print("hello?")
 
     async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> str|list:
-        print(image_path)
         """ returns (is_uploaded: bool, ) """
         if not self.has_emoji_perms:
             return "You do not have sufficient permissions to use this command."

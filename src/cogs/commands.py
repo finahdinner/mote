@@ -37,7 +37,7 @@ class Commands(commands.Cog):
                 else:
                     await contxt.edit_msg(f"{err_message}. Attempting a new emoji size...")
                     continue
-            error = await contxt.upload_emoji_to_server(img_path, emote_name)
+            error = await contxt.upload_emoji_to_server(emote_name, img_path)
             if not error:
                 return await contxt.edit_msg("Success! Emoji uploaded to Discord.")
             elif isinstance(error, list): # image too large
