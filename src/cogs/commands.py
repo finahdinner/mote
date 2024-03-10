@@ -49,7 +49,6 @@ class Commands(commands.Cog):
 
         return await contxt.edit_msg("Unable to upload emoji to Discord.")
 
-
     @commands.command()
     async def upload(self, ctx, image_file: discord.Attachment, emote_name):
         contxt = DiscordCtx(ctx)
@@ -61,7 +60,6 @@ class Commands(commands.Cog):
             return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}/upload <emote_name>`")
         
         await contxt.send_msg("Extracting emoji info, bear with me...")
-
 
     @commands.command()
     async def convert(self, ctx, image_file: discord.Attachment, emote_name):
