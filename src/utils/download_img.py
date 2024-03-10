@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from fake_useragent import UserAgent
 from src.utils.globals import (
-    CHROMEDRIVER_PATH,
+    _CHROMEDRIVER_PATH,
     _7TV_URL_REGEX,
     LARGE_IMAGE_XPATH,
     IMAGES_PATH,
@@ -27,7 +27,7 @@ ua = UserAgent()
 user_agent = str(ua.chrome)
 WINDOW_OPTIONS.add_argument(f'user-agent={user_agent}')
 
-s = Service(CHROMEDRIVER_PATH)
+s = Service(_CHROMEDRIVER_PATH)
 DRIVER = webdriver.Chrome(service=s, options=WINDOW_OPTIONS)
 
 

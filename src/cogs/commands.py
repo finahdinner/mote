@@ -29,7 +29,7 @@ class Commands(commands.Cog):
             return await contxt.reply_to_user(err_message)
     
         # try to download each of the sizes (4x, 3x, 2x, 1x) and try to upload each to Discord
-        for size in range(4, 0, 1):
+        for size in range(4, 0, -1):
             img_path, err_message = download_image(img_url, size=size)
             if not img_path: # if unable to download
                 if size == 1:

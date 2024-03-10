@@ -7,7 +7,7 @@ load_dotenv()
 DEBUG = os.environ.get("DEBUG", "False")
 BOT_TOKEN = os.environ["DISCORD_MOTE_BOT_TOKEN"]
 BOT_TEST_TOKEN = os.environ["BOT_TEST_TOKEN"]
-CHROMEDRIVER_PATH = os.environ["CHROMEDRIVER_PATH"]
+_CHROMEDRIVER_PATH = os.environ["_CHROMEDRIVER_PATH"]
 
 """ Absolute file paths """
 ENV_PY_PATH = Path(__file__)
