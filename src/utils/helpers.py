@@ -26,8 +26,7 @@ class DiscordCtx:
         await self.curr_message.edit(content=reply_msg)
 
     async def reply_to_user(self, message, ping=False) -> None:
-        await self.ctx.reply(message. mention_author==ping)
-        print("hello?")
+        await self.ctx.reply(message, mention_author=ping)
 
     async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> str|list:
         """ returns (is_uploaded: bool, ) """

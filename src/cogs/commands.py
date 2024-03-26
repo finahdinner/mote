@@ -15,7 +15,7 @@ class Commands(commands.Cog):
         await ctx.reply(f"Bot invite link:\n{DISCORD_INVITE_LINK}")
 
     @commands.command()
-    async def grab(self, ctx, page_url, emote_name="emote"):
+    async def grab(self, ctx, page_url, emote_name=None):
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
             return await contxt.reply_to_user("You do not have sufficient permissions to use this command.")
