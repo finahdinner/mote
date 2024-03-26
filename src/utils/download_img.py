@@ -16,6 +16,7 @@ from src.utils.globals import (
 import re
 import requests
 import os
+from PIL import Image
 
 
 """ Selenium Settings"""
@@ -62,11 +63,30 @@ def download_image(url: str, size=4) -> tuple[str, str]:
     response = requests.get(new_url)
     if response.status_code != 200:
         return "", "Unable to download image."
-    file_extension = url.split(".")[-1] 
+    file_extension = url.split(".")[-1]
     downloaded_path = os.path.join(IMAGES_PATH, f"download.{file_extension}")
-    with open(downloaded_path, "wb") as img:
+    new_extension = "gif" if is_animated(downloaded_path) else "png"
+    new_img_path = convert_img(downloaded_path, new_extension)
+    with open(new_img_path, "wb") as img:
         img.write(response.content)
-    return downloaded_path, ""
+    return new_img_path, ""
+
+
+def is_animated(filepath: str) -> bool:
+    return False ## TODO - FIX LATER TO INTRODUCE LOGIC
+
+
+def convert_img(filepath: str, new_extension) -> str:
+    new_path = filepath.replace(".webp", ".{new_extension}")
+    with Image.open(filepath) as img:
+        if new_extension == "gif":
+            pass ## TODO - ADD LOGIC HERE LATER (to convert webp to an animated gif)
+        else:
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            new_path = filepath.replace(".webp", ".{new_extension}")
+            img.save(new_path)
+    return new_path
     
 
 # # for testing
