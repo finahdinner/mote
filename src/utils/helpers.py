@@ -43,6 +43,8 @@ class DiscordCtx:
                 return "Maximum number of emojis reached."
             elif 'error code: 50138' in e.args[0]: # if image too big, return the list
                 return e.args[0]
+            elif 'error code: 50045' in e.args[0]: # if image too big
+                return e.args[0]
             else:
                 return "Unknown HTTP error - unable to upload emoji to Discord."
         return ""
