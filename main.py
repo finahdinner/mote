@@ -2,7 +2,7 @@ import asyncio
 from discord import Intents
 from discord.ext import commands
 from src.utils.globals import (
-    DEBUG,
+    DEBUG_MODE,
     BOT_TOKEN,
     BOT_TEST_TOKEN,
     BOT_PREFIX,
@@ -46,7 +46,7 @@ class MyBot(commands.Bot):
 
 
 async def main():
-    token = BOT_TOKEN if DEBUG == "False" else BOT_TEST_TOKEN
+    token = BOT_TOKEN if DEBUG_MODE == "False" else BOT_TEST_TOKEN
     prefixes = [BOT_PREFIX, BOT_PREFIX.title()] # both lowercase and title case are options
     bot = MyBot(
         command_prefix=commands.when_mentioned_or(*prefixes),

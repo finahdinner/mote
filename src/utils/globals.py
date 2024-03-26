@@ -4,7 +4,7 @@ from pathlib import Path
 
 """ Env variables """
 load_dotenv()
-DEBUG = os.environ.get("DEBUG", "False")
+DEBUG_MODE = os.environ.get("DEBUG_MODE", "False")
 BOT_TOKEN = os.environ["DISCORD_MOTE_BOT_TOKEN"]
 BOT_TEST_TOKEN = os.environ["BOT_TEST_TOKEN"]
 _CHROMEDRIVER_PATH = os.environ["_CHROMEDRIVER_PATH"]
