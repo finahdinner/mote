@@ -2,7 +2,7 @@ from discord.ext import commands
 import discord
 import textwrap
 from src.utils.globals import DISCORD_INVITE_LINK, BOT_PREFIX
-from src.utils.classes import DiscordCtx
+from src.utils.classes import DiscordCtx, ExecutionOutcome
 from src.utils.helpers import (
     get_image_url,
     download_webp,
@@ -25,7 +25,7 @@ class Commands(commands.Cog):
     async def grab(self, ctx, page_url, emote_name=None):
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
-            return await contxt.reply_to_user("You do not have sufficient permissions to use this command.")
+            return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
         if not page_url or not emote_name:
             return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}grab <7tv_url> <emote_name>`")
         
@@ -34,17 +34,18 @@ class Commands(commands.Cog):
         # retrieve webp url
         webp_url, err_message = get_image_url(page_url)
         if err_message:
-            return await contxt.reply_to_user(err_message)
+            return await contxt.edit_msg(err_message, ExecutionOutcome.ERROR)
     
         # download webp image
         webp_img_path, err_message = download_webp(webp_url)
         if err_message:
-            return await contxt.edit_msg(err_message)
+            return await contxt.edit_msg(err_message, ExecutionOutcome.ERROR)
         new_file_extension = "gif" if is_animated(webp_img_path) else "png"
         url = webp_url.replace(".webp", f".{new_file_extension}")
 
         # try to download the correct .png or .gif in each of the sizes (4x, 3x, 2x, 1x)
         # and try to upload each to Discord
+        num_attempts = 1
         for size in range(4, 0, -1):
             final_img_path, err_message = download_img_correct_format(
                 url=url,
@@ -52,45 +53,46 @@ class Commands(commands.Cog):
                 size=size
             )
             if err_message:
-                return await contxt.reply_to_user(err_message)
+                return await contxt.edit_msg(err_message, ExecutionOutcome.ERROR)
             upload_error = await contxt.upload_emoji_to_server(emote_name, final_img_path)
             if not upload_error:
-                return await contxt.edit_msg("Success! Emoji uploaded to Discord.")
+                return await contxt.edit_msg("Success! Emoji uploaded to Discord.", ExecutionOutcome.SUCCESS)
             elif isinstance(upload_error, tuple): # image too large
                 if size == 1:
-                    return await contxt.edit_msg("All emoji sizes were too large to upload to Discord.")
+                    return await contxt.edit_msg("All emoji sizes were too large to upload to Discord.", ExecutionOutcome.ERROR)
                 else: 
-                    await contxt.edit_msg(f"Image too large, trying a smaller version. ({5-size})")
+                    await contxt.edit_msg(f"Image too large, trying a smaller version. ({num_attempts})")
+                    num_attempts += 1
             else: # any upload_error other than the emoji being too big
-                return await contxt.edit_msg(upload_error)
+                return await contxt.edit_msg(upload_error, ExecutionOutcome.ERROR)
             
-        return await contxt.edit_msg("Unable to upload emoji to Discord.")
+        return await contxt.edit_msg("Unable to upload emoji to Discord.", ExecutionOutcome.ERROR)
 
     @commands.command()
     async def upload(self, ctx, emote_name=None):
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
-            return await contxt.reply_to_user("You do not have sufficient permissions to use this command.")
+            return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
         if not contxt.attachments:
-            return await contxt.reply_to_user(f"You must attach an image to upload (embedded image links won't work).")
+            return await contxt.reply_to_user(f"You must attach an image to upload (embedded image links won't work).", ExecutionOutcome.WARNING)
         if not emote_name:
-            return await contxt.reply_to_user(f"You provide an emote name.")
+            return await contxt.reply_to_user(f"You must provide an emote name.", ExecutionOutcome.WARNING)
         
         await contxt.send_msg("Working on it...")
 
         img_url = contxt.attachments[0].url
         img_path, img_size, error = download_discord_img(img_url)
         if error:
-            return await contxt.reply_to_user(error)
+            return await contxt.edit_msg(error, ExecutionOutcome.ERROR)
 
         resized_img_path, error = convert_discord_img(img_path, img_size)
         upload_error = await contxt.upload_emoji_to_server(emote_name, resized_img_path)
         if not upload_error:
-            return await contxt.edit_msg("Success! Emoji uploaded to Discord.")
+            return await contxt.edit_msg("Success! Emoji uploaded to Discord.", ExecutionOutcome.SUCCESS)
         elif isinstance(upload_error, tuple):
-            return await contxt.edit_msg("An error occurred and your image was unable to be uploaded.")
+            return await contxt.edit_msg("An error occurred and your image was unable to be uploaded.", ExecutionOutcome.ERROR)
         else:
-            return await contxt.edit_msg(upload_error)
+            return await contxt.edit_msg(upload_error, ExecutionOutcome.ERROR)
         
 
     @commands.command()
@@ -107,14 +109,6 @@ class Commands(commands.Cog):
             `{BOT_PREFIX}help` --> *commandception intensifies*
         """)
         await ctx.reply(commands_msg, mention_author=False)
-
-    @commands.command()
-    async def test(self, ctx):
-        import time
-        contxt = DiscordCtx(ctx)
-        await contxt.send_msg("Test message")
-        time.sleep(1)
-        await contxt.edit_msg("Test edit")
 
 
 async def setup(bot):

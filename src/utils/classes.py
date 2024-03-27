@@ -23,11 +23,12 @@ class DiscordCtx:
     async def edit_msg(self, message: str, exec_outcome=ExecutionOutcome.DEFAULT) -> None:
         if not self.curr_message:
             return
-        reply_msg = DiscordCtx.emojify_str(message, exec_outcome)
-        await self.curr_message.edit(content=reply_msg)
+        msg = DiscordCtx.emojify_str(message, exec_outcome)
+        await self.curr_message.edit(content=msg)
 
-    async def reply_to_user(self, message, ping=False) -> None:
-        await self.ctx.reply(message, mention_author=ping)
+    async def reply_to_user(self, message, exec_outcome=ExecutionOutcome.DEFAULT, ping=False) -> None:
+        msg = DiscordCtx.emojify_str(message, exec_outcome)
+        await self.ctx.reply(msg, mention_author=ping)
 
     async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> str|tuple:
         """ returns (is_uploaded: bool, ) """
@@ -56,10 +57,12 @@ class DiscordCtx:
         Given a specified exec_outcome, pre-pend an appropriate emoji (check mark or cross)
         """
         match exec_outcome.name:
+            case "ERROR":
+                emoji_str = ":x: "
+            case "WARNING":
+                emoji_str = ":warning: "
             case "SUCCESS":
                 emoji_str = ":white_check_mark: "
-            case "ERROR" | "WARNING":
-                emoji_str = ":x: "
             case _:
                 emoji_str = ""
         return emoji_str + msg
