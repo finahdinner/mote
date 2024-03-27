@@ -143,10 +143,3 @@ def resize_img(img_path: str) -> tuple[str, str]:
         except Exception as e:
             return "", f"Unable to resize image: {e}"
     return img_path, ""
-
-
-# # for testing
-# page_url = "https://7tv.app/emotes/6042089e77137b000de9e669"
-# image_url = get_image_url(page_url)[0]
-# downloaded_path = download_image(image_url)
-# print(downloaded_path)
