@@ -1,7 +1,7 @@
 from discord.ext import commands
 import discord
 import textwrap
-from src.utils.globals import DISCORD_INVITE_LINK, BOT_PREFIX
+from src.utils.globals import BOT_INVITE_LINK, BOT_PREFIX
 from src.utils.classes import DiscordCtx, ExecutionOutcome
 from src.utils.helpers import (
     get_image_url,
@@ -19,7 +19,7 @@ class Commands(commands.Cog):
 
     @commands.command()
     async def invite(self, ctx):
-        await ctx.reply(f"Bot invite link:\n{DISCORD_INVITE_LINK}")
+        await ctx.reply(f"Bot invite link:\n{BOT_INVITE_LINK}")
 
     @commands.command()
     async def grab(self, ctx, page_url, emote_name=None):
@@ -106,6 +106,7 @@ class Commands(commands.Cog):
             `{BOT_PREFIX}grab <7tv_url> <emote_name>` --> Grab an emote from 7TV and upload to the server.
             `{BOT_PREFIX}upload <emote_name>` --> When provided with an uploaded image, will upload it to the server.
             `{BOT_PREFIX}convert <emote_name>` --> Same as `{BOT_PREFIX}convert`.
+            `{BOT_PREFIX}invite` --> Get the invite link for the bot.
             `{BOT_PREFIX}help` --> *commandception intensifies*
         """)
         await ctx.reply(commands_msg, mention_author=False)

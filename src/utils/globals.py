@@ -18,7 +18,7 @@ IMAGES_PATH = os.path.join(SRC_DIR_PATH, "images")
 
 """ Bot """
 BOT_PREFIX = "mote/"
-DISCORD_INVITE_LINK = os.environ["DISCORD_INVITE_LINK"]
+BOT_INVITE_LINK = os.environ["BOT_INVITE_LINK"]
 
 """ Discord """
 MAX_EMOTE_SIZE_BYTES = 262144
