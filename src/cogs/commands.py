@@ -96,7 +96,7 @@ class Commands(commands.Cog):
         
 
     @commands.command()
-    async def convert(self, ctx, image_file: discord.Attachment, emote_name):
+    async def convert(self, ctx, emote_name=None):
         """ Alias for mote/upload """
         await self.upload(ctx, emote_name)
 
