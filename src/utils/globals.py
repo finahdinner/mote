@@ -20,7 +20,6 @@ IMAGES_PATH = os.path.join(SRC_DIR_PATH, "images")
 BOT_PREFIX = "mote/"
 DISCORD_INVITE_LINK = os.environ["DISCORD_INVITE_LINK"]
 
-""" 7TV-Specific """
-_7TV_URL_REGEX = r"^(https://|http://)7tv.app/emotes/([\w]+)$"
-LARGE_IMAGE_XPATH = r'//*[@id="app"]/main/main/main/section/div[4]'
-EMOTE_URL_REGEX = r"^(https://|http://)cdn.7tv.app/emote/([\w]+)/(\d)x\.webp$"
+""" Discord """
+MAX_EMOTE_SIZE_BYTES = 262144
+MAX_EMOTE_SIZE_DIMENSIONS = (256, 256)
