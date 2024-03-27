@@ -2,12 +2,11 @@ from discord.ext import commands
 import discord
 from enum import Enum
 
-
-class ExecutionOutcome(Enum):
-    ERROR = 2
-    WARNING = 1
-    DEFAULT = 0
-    SUCCESS = -1
+""" Logging """
+from src.logs import MyLogger, ExecutionOutcome
+from pathlib import Path
+from src.utils.globals import LOG_FILE_PATH
+my_logger = MyLogger(file_name="bot", log_file_path=LOG_FILE_PATH)
 
 
 class DiscordCtx:
@@ -17,18 +16,21 @@ class DiscordCtx:
         self.bot_message = None # this will be updated to whatever the bot eventually sends
         self.attachments = self.ctx.message.attachments
 
-    async def send_msg(self, message) -> None:
+    async def send_msg(self, message, exec_outcome=ExecutionOutcome.DEFAULT) -> None:
         self.curr_message = await self.ctx.send(message)
+        my_logger.log_message(self.ctx, message, exec_outcome) # log message
 
     async def edit_msg(self, message: str, exec_outcome=ExecutionOutcome.DEFAULT) -> None:
         if not self.curr_message:
             return
         msg = DiscordCtx.emojify_str(message, exec_outcome)
         await self.curr_message.edit(content=msg)
+        my_logger.log_message(self.ctx, message, exec_outcome) # log message
 
     async def reply_to_user(self, message, exec_outcome=ExecutionOutcome.DEFAULT, ping=False) -> None:
         msg = DiscordCtx.emojify_str(message, exec_outcome)
         await self.ctx.reply(msg, mention_author=ping)
+        my_logger.log_message(self.ctx, message, exec_outcome) # log message
 
     async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> str|tuple:
         """ returns (is_uploaded: bool, ) """

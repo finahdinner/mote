@@ -1,5 +1,4 @@
 from discord.ext import commands
-import discord
 import textwrap
 from src.utils.globals import BOT_INVITE_LINK, BOT_PREFIX
 from src.utils.classes import DiscordCtx, ExecutionOutcome
