@@ -3,7 +3,7 @@ import discord
 import textwrap
 from src.utils.globals import DISCORD_INVITE_LINK, BOT_PREFIX
 from src.utils.helpers import DiscordCtx
-from src.utils.download_img import get_image_url, download_image
+from src.utils.download_img import get_image_url, download_webp, download_img_correct_format, is_animated
 
 
 class Commands(commands.Cog):
@@ -24,29 +24,39 @@ class Commands(commands.Cog):
         
         await contxt.send_msg("Extracting emoji info, bear with me...")
 
-        img_url, err_message = get_image_url(page_url)
-        if not img_url:
+        # retrieve webp url
+        webp_url, err_message = get_image_url(page_url)
+        if err_message:
             return await contxt.reply_to_user(err_message)
     
-        # try to download each of the sizes (4x, 3x, 2x, 1x) and try to upload each to Discord
+        # download webp image
+        webp_img_path, err_message = download_webp(webp_url)
+        if err_message:
+            return await contxt.edit_msg(err_message)
+        new_file_extension = "gif" if is_animated(webp_img_path) else "png"
+        url = webp_url.replace(".webp", f".{new_file_extension}")
+
+        # try to download the correct .png or .gif in each of the sizes (4x, 3x, 2x, 1x)
+        # and try to upload each to Discord
         for size in range(4, 0, -1):
-            img_path, err_message = download_image(img_url, size=size)
-            if not img_path: # if unable to download
-                if size == 1:
-                    return await contxt.edit_msg(err_message)
-                else:
-                    await contxt.edit_msg(f"{err_message}. Attempting a new emoji size...")
-                    continue
-            error = await contxt.upload_emoji_to_server(emote_name, img_path)
-            if not error:
+            final_img_path, err_message = download_img_correct_format(
+                url=url,
+                file_extension=new_file_extension,
+                size=size
+            )
+            if err_message:
+                return await contxt.reply_to_user(err_message)
+            upload_error = await contxt.upload_emoji_to_server(emote_name, final_img_path)
+            if not upload_error:
                 return await contxt.edit_msg("Success! Emoji uploaded to Discord.")
-            elif isinstance(error, list): # image too large
+            elif isinstance(upload_error, tuple): # image too large
                 if size == 1:
                     return await contxt.edit_msg("All emoji sizes were too large to upload to Discord.")
-                else: continue
-            else: # any error other than the emoji being too big
-                return await contxt.edit_msg(error)
-
+                else: 
+                    await contxt.edit_msg(f"Image too large, trying a smaller version. ({5-size})")
+            else: # any upload_error other than the emoji being too big
+                return await contxt.edit_msg(upload_error)
+            
         return await contxt.edit_msg("Unable to upload emoji to Discord.")
 
     @commands.command()

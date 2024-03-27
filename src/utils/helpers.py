@@ -28,7 +28,7 @@ class DiscordCtx:
     async def reply_to_user(self, message, ping=False) -> None:
         await self.ctx.reply(message, mention_author=ping)
 
-    async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> str|list:
+    async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> str|tuple:
         """ returns (is_uploaded: bool, ) """
         if not self.has_emoji_perms:
             return "You do not have sufficient permissions to use this command."
@@ -42,9 +42,9 @@ class DiscordCtx:
             if 'error code: 30008' in e.args[0]: # if max number of emojis reached
                 return "Maximum number of emojis reached."
             elif 'error code: 50138' in e.args[0]: # if image too big, return the list
-                return e.args[0]
-            elif 'error code: 50045' in e.args[0]: # if image too big
-                return e.args[0]
+                return e.args
+            elif 'error code: 50045' in e.args[0]: # if image format is wrong
+                return "Internal server error - wrong image format is being used (not your fault)."
             else:
                 return "Unknown HTTP error - unable to upload emoji to Discord."
         return ""

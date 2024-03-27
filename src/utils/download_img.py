@@ -16,7 +16,7 @@ from src.utils.globals import (
 import re
 import requests
 import os
-from PIL import Image
+from PIL import Image, ImageSequence
 
 
 """ Selenium Settings"""
@@ -51,41 +51,50 @@ def get_image_url(page_url: str) -> tuple[str, str]:
     return image_url, ""
 
 
-def download_image(url: str, size=4) -> tuple[str, str]:
+def download_webp(url: str) -> tuple[str, str]:
     results = re.search(EMOTE_URL_REGEX, url)
     if not results:
         return "", "Not a valid image URL."
-    
-    # now modify the url to factor in the specified size (4x, 2x, 1x) of the image
-    pattern, replacement = r"/(\d)x\.webp$", f"/{size}x.webp"
-    new_url = re.sub(pattern, replacement, url)
-
-    response = requests.get(new_url)
+    response = requests.get(url)
     if response.status_code != 200:
         return "", "Unable to download image."
-    file_extension = url.split(".")[-1]
+    downloaded_path = os.path.join(IMAGES_PATH, "download.webp")
+    with open(downloaded_path, "wb") as img:
+        img.write(response.content)
+    return downloaded_path, "" # always webp format
+
+
+def download_img_correct_format(url: str, file_extension: str, size: int = 4) -> tuple[str, str]:
+    # modify the url to factor in the specified size (4x, 2x, 1x) of the image
+    pattern, replacement = rf"/(\d)x\.{file_extension}$", rf"/{size}x.{file_extension}"
+    dl_url = re.sub(pattern, replacement, url)
+    response = requests.get(dl_url)
+    if response.status_code != 200:
+        return "", "Unable to download image."
     downloaded_path = os.path.join(IMAGES_PATH, f"download.{file_extension}")
-    new_extension = "gif" if is_animated(downloaded_path) else "png"
-    new_img_path = convert_img(downloaded_path, new_extension)
+    new_img_path = convert_img(downloaded_path, file_extension)
     with open(new_img_path, "wb") as img:
         img.write(response.content)
     return new_img_path, ""
 
 
 def is_animated(filepath: str) -> bool:
-    return False ## TODO - FIX LATER TO INTRODUCE LOGIC
+    media = Image.open(filepath)
+    idx = 0
+    for _ in ImageSequence.Iterator(media):
+        idx += 1
+    return idx > 1 # true if more than one frame
 
 
 def convert_img(filepath: str, new_extension) -> str:
-    new_path = filepath.replace(".webp", ".{new_extension}")
+    new_path = filepath.replace(".webp", f".{new_extension}")
     with Image.open(filepath) as img:
-        if new_extension == "gif":
-            pass ## TODO - ADD LOGIC HERE LATER (to convert webp to an animated gif)
-        else:
-            if img.mode != "RGB":
-                img = img.convert("RGB")
-            new_path = filepath.replace(".webp", ".{new_extension}")
-            img.save(new_path)
+        if new_extension == "png":
+            if img.mode != "RGBA":
+                # idk if I need these
+                img = img.convert("RGBA")
+                img.info.pop('background', None)
+        img.save(new_path)
     return new_path
     
 
