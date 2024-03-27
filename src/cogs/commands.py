@@ -20,7 +20,7 @@ class Commands(commands.Cog):
         if not contxt.has_emoji_perms:
             return await contxt.reply_to_user("You do not have sufficient permissions to use this command.")
         if not page_url or not emote_name:
-            return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}/grab <7tv_url> <emote_name>`")
+            return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}grab <7tv_url> <emote_name>`")
         
         await contxt.send_msg("Extracting emoji info, bear with me...")
 
@@ -57,7 +57,7 @@ class Commands(commands.Cog):
         if not image_file:
             return await contxt.reply_to_user(f"You must attach an image to upload (embedded image links won't work).")
         if not emote_name:
-            return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}/upload <emote_name>`")
+            return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}upload <emote_name>`")
         
         await contxt.send_msg("Extracting emoji info, bear with me...")
 
