@@ -63,15 +63,14 @@ def download_webp(url: str) -> tuple[str, str]:
     return downloaded_path, "" # always webp format
 
 
-def download_img_correct_format(url: str, file_extension: str, size: int = 4) -> tuple[str, str]:
+def download_img_correct_format(webp_img_path: str, url: str, file_extension: str, size: int = 4) -> tuple[str, str]:
     # modify the url to factor in the specified size (4x, 2x, 1x) of the image
     pattern, replacement = rf"/(\d)x\.{file_extension}$", rf"/{size}x.{file_extension}"
     dl_url = re.sub(pattern, replacement, url)
     response = requests.get(dl_url)
     if response.status_code != 200:
         return "", "Unable to download image."
-    downloaded_path = os.path.join(IMAGES_PATH, f"download.{file_extension}")
-    new_img_path = convert_7v_img(downloaded_path, file_extension)
+    new_img_path = convert_7v_img(webp_img_path, file_extension)
     with open(new_img_path, "wb") as img:
         img.write(response.content)
     return new_img_path, ""

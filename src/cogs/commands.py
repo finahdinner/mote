@@ -48,6 +48,7 @@ class Commands(commands.Cog):
         num_attempts = 1
         for size in range(4, 0, -1):
             final_img_path, err_message = download_img_correct_format(
+                webp_img_path=webp_img_path,
                 url=url,
                 file_extension=new_file_extension,
                 size=size
