@@ -21,12 +21,14 @@ class Commands(commands.Cog):
         await ctx.reply(f"Bot invite link:\n{BOT_INVITE_LINK}")
 
     @commands.command()
-    async def grab(self, ctx, page_url, emote_name=None):
+    async def grab(self, ctx, page_url, emote_name: str = ""):
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
             return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
         if not page_url or not emote_name:
             return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}grab <7tv_url> <emote_name>`")
+        if not emote_name.replace("_","").isalnum() or len(emote_name) < 2 or len(emote_name) > 32: # only alphanums or underscores allowed in names
+            return await contxt.reply_to_user("Emote name must be between 2 and 32 alphanumeric characters long.", ExecutionOutcome.WARNING)
         
         await contxt.send_msg("Working on it...")
 
@@ -69,7 +71,7 @@ class Commands(commands.Cog):
         return await contxt.edit_msg("Unable to upload emoji to Discord.", ExecutionOutcome.ERROR)
 
     @commands.command()
-    async def upload(self, ctx, emote_name=None):
+    async def upload(self, ctx, emote_name: str = ""):
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
             return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
@@ -77,6 +79,8 @@ class Commands(commands.Cog):
             return await contxt.reply_to_user(f"You must attach an image to upload (embedded image links won't work).", ExecutionOutcome.WARNING)
         if not emote_name:
             return await contxt.reply_to_user(f"You must provide an emote name.", ExecutionOutcome.WARNING)
+        if not emote_name.replace("_","").isalnum() or len(emote_name) < 2 or len(emote_name) > 32: # only alphanums or underscores allowed in names
+            return await contxt.reply_to_user("Emote name must be between 2 and 32 alphanumeric characters long.", ExecutionOutcome.WARNING)
         
         await contxt.send_msg("Working on it...")
 
@@ -96,7 +100,7 @@ class Commands(commands.Cog):
         
 
     @commands.command()
-    async def convert(self, ctx, emote_name=None):
+    async def convert(self, ctx, emote_name: str = ""):
         """ Alias for mote/upload """
         await self.upload(ctx, emote_name)
 

@@ -49,6 +49,8 @@ class DiscordCtx:
                 return e.args
             elif 'error code: 50045' in e.args[0]: # if image format is wrong
                 return "Internal server error - wrong image format is being used (not your fault)."
+            elif 'error code: 50035' in e.args[0]: # if provided name is too long
+                return "Emote name must be between 2 and 32 characters long."
             else:
                 return "Unknown HTTP error - unable to upload emoji to Discord."
         return ""
