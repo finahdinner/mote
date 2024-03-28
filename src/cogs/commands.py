@@ -17,11 +17,11 @@ class Commands(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def invite(self, ctx):
+    async def invite(self, ctx) -> None:
         await ctx.reply(f"Bot invite link:\n{BOT_INVITE_LINK}")
 
     @commands.command()
-    async def grab(self, ctx, page_url, emote_name: str = ""):
+    async def grab(self, ctx, page_url: str, emote_name: str = "") -> None:
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
             return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
@@ -71,7 +71,7 @@ class Commands(commands.Cog):
         return await contxt.edit_msg("Unable to upload emoji to Discord.", ExecutionOutcome.ERROR)
 
     @commands.command()
-    async def upload(self, ctx, emote_name: str = ""):
+    async def upload(self, ctx, emote_name: str = "") -> None:
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
             return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
@@ -100,12 +100,12 @@ class Commands(commands.Cog):
         
 
     @commands.command()
-    async def convert(self, ctx, emote_name: str = ""):
+    async def convert(self, ctx, emote_name: str = "") -> None:
         """ Alias for mote/upload """
         await self.upload(ctx, emote_name)
 
     @commands.command()
-    async def help(self, ctx):
+    async def help(self, ctx) -> None:
         commands_msg = textwrap.dedent(f"""\
             `{BOT_PREFIX}grab <7tv_url> <emote_name>` --> Grab an emote from 7TV and upload to the server.
             `{BOT_PREFIX}upload <emote_name>` --> When provided with an uploaded image, will upload it to the server.
