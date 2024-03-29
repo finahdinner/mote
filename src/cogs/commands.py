@@ -1,9 +1,9 @@
 from discord.ext import commands
 import textwrap
 from src.logs import ExecutionOutcome
-from src.classes import DiscordCtx
 from src.globals import BOT_INVITE_LINK, BOT_PREFIX
 from src.helpers import (
+    DiscordCtx,
     is_valid_7tv_url,
     get_api_url,
     retrieve_image_info,
