@@ -92,13 +92,11 @@ class Commands(commands.Cog):
         resized_img_path, error = convert_discord_img(img_path, img_size)
         if error:
             return await contxt.edit_msg(error, ExecutionOutcome.ERROR)
-        upload_error = await contxt.upload_emoji_to_server(emote_name, resized_img_path)
-        if not upload_error:
-            return await contxt.edit_msg(f"Success! :{emote_name}: uploaded!", ExecutionOutcome.SUCCESS)
-        elif isinstance(upload_error, tuple):
-            return await contxt.edit_msg("An error occurred and your image was unable to be uploaded.", ExecutionOutcome.ERROR)
-        else:
-            return await contxt.edit_msg(upload_error, ExecutionOutcome.ERROR)
+        
+        err_text, _ = await contxt.upload_emoji_to_server(emote_name, resized_img_path)
+        if err_text:
+            return await contxt.edit_msg(err_text, ExecutionOutcome.ERROR)
+        return await contxt.edit_msg("Success! Emoji uploaded to Discord.", ExecutionOutcome.SUCCESS)
 
     @commands.command()
     async def convert(self, ctx, emote_name: str = "") -> None:
