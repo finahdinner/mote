@@ -9,7 +9,8 @@ from src.helpers import (
     retrieve_image_info,
     download_7tv_image,
     download_discord_img,
-    convert_discord_img
+    convert_discord_img,
+    resize_img
 )
 
 
@@ -33,14 +34,18 @@ class Commands(commands.Cog):
                 return await contxt.reply_to_user("Emote name must be between 2 and 32 alphanumeric characters long.", ExecutionOutcome.WARNING)
         if not is_valid_7tv_url(page_url):
             return await contxt.reply_to_user("Please provide a valid 7TV URL.", ExecutionOutcome.WARNING)
-
+        
         await contxt.send_msg(f"Working on it{' (defaulting to 7TV name)' if emote_name is None else ''}...")
 
         api_url = get_api_url(page_url)
         emote, err = retrieve_image_info(api_url, emote_name)
         if not emote:
-            return await(contxt.edit_msg(err, ExecutionOutcome.ERROR))        
-
+            return await(contxt.edit_msg(err, ExecutionOutcome.ERROR))   
+            
+        # this should never be hit because emote.valid_dl_urls should always be size >= 1
+        if not emote.valid_dl_urls:
+            return await contxt.edit_msg("No valid sizes emote sizes found.", ExecutionOutcome.ERROR)
+        
         # try to download from urls/upload to the server until one works
         num_attempts = len(emote.valid_dl_urls)
         for attempt_num, url in enumerate(emote.valid_dl_urls, 1):
@@ -49,14 +54,22 @@ class Commands(commands.Cog):
                 # assume that the rest of the urls won't be downloadable either
                 return await(contxt.edit_msg(err, ExecutionOutcome.ERROR))
             err_text, err_code = await contxt.upload_emoji_to_server(emote.name, img_path)
-            if err_code == 50138: # if image too large to upload
-                if attempt_num == num_attempts: # if the final attempt produces an error
-                    return await(contxt.edit_msg(err_text, ExecutionOutcome.ERROR))
-                await contxt.edit_msg(f"Trying to upload a new size... ({attempt_num}/{num_attempts-1})")
-                continue # try the next size
-            elif err_text:
+            if not err_text: # successful upload
+                break
+            elif err_code == 50138: # if image too large to upload
+                if attempt_num < num_attempts:
+                    await contxt.edit_msg(f"Trying to upload a new size... ({attempt_num}/{num_attempts-1})")
+                else: # if the final attempt fails, try to manually resize
+                    await contxt.edit_msg("Trying to manually resize...")
+                    img_path, resize_err = resize_img(img_path)
+                    if resize_err:
+                        return await(contxt.edit_msg(resize_err, ExecutionOutcome.ERROR))
+                    err_text, err_code = await contxt.upload_emoji_to_server(emote.name, img_path)
+                    if err_code:
+                        return await(contxt.edit_msg(err_text, ExecutionOutcome.ERROR))
+            else: # any other error
                 return await(contxt.edit_msg(err_text, ExecutionOutcome.ERROR))
-        
+            
         return await contxt.edit_msg(f"Success! `{emote_name}` uploaded!", ExecutionOutcome.SUCCESS)
 
     @commands.command()
