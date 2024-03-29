@@ -102,7 +102,8 @@ class Commands(commands.Cog):
 
     @commands.command()
     async def convert(self, ctx, emote_name: str = "") -> None:
-        contxt = DiscordCtx(ctx)
+        """ Alias for mote/upload """
+        await self.upload(ctx, emote_name)
 
     @commands.command()
     async def help(self, ctx) -> None:
