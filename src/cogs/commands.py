@@ -1,14 +1,13 @@
 from discord.ext import commands
 import textwrap
-from src.utils.globals import BOT_INVITE_LINK, BOT_PREFIX
-from src.utils.classes import DiscordCtx, ExecutionOutcome
-from src.utils.helpers import (
-    get_image_url,
-    download_webp,
-    download_img_correct_format,
-    is_animated,
-    download_discord_img,
-    convert_discord_img
+from src.logs import ExecutionOutcome
+from src.classes import DiscordCtx
+from src.globals import BOT_INVITE_LINK, BOT_PREFIX
+from src.helpers import (
+    is_valid_7tv_url,
+    get_api_url,
+    retrieve_image_info,
+    download_7tv_image
 )
 
 
@@ -21,93 +20,45 @@ class Commands(commands.Cog):
         await ctx.reply(f"Bot invite link:\n{BOT_INVITE_LINK}")
 
     @commands.command()
-    async def grab(self, ctx, page_url: str, emote_name: str = "") -> None:
+    async def grab(self, ctx, page_url: str, emote_name: str|None = None) -> None:
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
             return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
-        if not page_url or not emote_name:
-            return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}grab <7tv_url> <emote_name>`")
-        if not emote_name.replace("_","").isalnum() or len(emote_name) < 2 or len(emote_name) > 32: # only alphanums or underscores allowed in names
-            return await contxt.reply_to_user("Emote name must be between 2 and 32 alphanumeric characters long.", ExecutionOutcome.WARNING)
+        if not page_url:
+            return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}grab <7tv_url> [emote_name]`")
+        if emote_name is not None:
+            if not emote_name.replace("_","").isalnum() or len(emote_name) < 2 or len(emote_name) > 32: # only alphanums or underscores allowed in names
+                return await contxt.reply_to_user("Emote name must be between 2 and 32 alphanumeric characters long.", ExecutionOutcome.WARNING)
+        if not is_valid_7tv_url(page_url):
+            return await contxt.reply_to_user("Please provide a valid 7TV URL.", ExecutionOutcome.WARNING)
+
+        await contxt.send_msg(f"Working on it{' (defaulting to 7TV name)' if emote_name is None else ''}...")
+
+        api_url = get_api_url(page_url)
+        emote, err = retrieve_image_info(api_url, emote_name)
+        if not emote:
+            return await(contxt.reply_to_user(err, ExecutionOutcome.ERROR))
+        img_path, err = download_7tv_image(emote.url, emote.format)
+        if not img_path:
+            return await(contxt.reply_to_user(err, ExecutionOutcome.ERROR))
+        upload_error = await contxt.upload_emoji_to_server(emote.name, img_path)
+        if upload_error:
+            return await contxt.edit_msg(upload_error, ExecutionOutcome.ERROR)
         
-        await contxt.send_msg("Working on it...")
-
-        # retrieve webp url
-        webp_url, err_message = get_image_url(page_url)
-        if err_message:
-            return await contxt.edit_msg(err_message, ExecutionOutcome.ERROR)
-    
-        # download webp image
-        webp_img_path, err_message = download_webp(webp_url)
-        if err_message:
-            return await contxt.edit_msg(err_message, ExecutionOutcome.ERROR)
-        new_file_extension = "gif" if is_animated(webp_img_path) else "png"
-        url = webp_url.replace(".webp", f".{new_file_extension}")
-
-        # try to download the correct .png or .gif in each of the sizes (4x, 3x, 2x, 1x)
-        # and try to upload each to Discord
-        num_attempts = 1
-        for size in range(4, 0, -1):
-            final_img_path, err_message = download_img_correct_format(
-                webp_img_path=webp_img_path,
-                url=url,
-                file_extension=new_file_extension,
-                size=size
-            )
-            if err_message:
-                return await contxt.edit_msg(err_message, ExecutionOutcome.ERROR)
-            upload_error = await contxt.upload_emoji_to_server(emote_name, final_img_path)
-            if not upload_error:
-                return await contxt.edit_msg("Success! Emoji uploaded to Discord.", ExecutionOutcome.SUCCESS)
-            elif isinstance(upload_error, tuple): # image too large
-                if size == 1:
-                    return await contxt.edit_msg("All emoji sizes were too large to upload to Discord.", ExecutionOutcome.ERROR)
-                else: 
-                    await contxt.edit_msg(f"Image too large, trying a smaller version. ({num_attempts})")
-                    num_attempts += 1
-            else: # any upload_error other than the emoji being too big
-                return await contxt.edit_msg(upload_error, ExecutionOutcome.ERROR)
-            
-        return await contxt.edit_msg("Unable to upload emoji to Discord.", ExecutionOutcome.ERROR)
+        return await contxt.edit_msg("Success! Emoji uploaded to Discord.", ExecutionOutcome.SUCCESS)
 
     @commands.command()
     async def upload(self, ctx, emote_name: str = "") -> None:
         contxt = DiscordCtx(ctx)
-        if not contxt.has_emoji_perms:
-            return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
-        if not contxt.attachments:
-            return await contxt.reply_to_user(f"You must attach an image to upload (embedded image links won't work).", ExecutionOutcome.WARNING)
-        if not emote_name:
-            return await contxt.reply_to_user(f"You must provide an emote name.", ExecutionOutcome.WARNING)
-        if not emote_name.replace("_","").isalnum() or len(emote_name) < 2 or len(emote_name) > 32: # only alphanums or underscores allowed in names
-            return await contxt.reply_to_user("Emote name must be between 2 and 32 alphanumeric characters long.", ExecutionOutcome.WARNING)
-        
-        await contxt.send_msg("Working on it...")
-
-        img_url = contxt.attachments[0].url
-        img_path, img_size, error = download_discord_img(img_url)
-        if error:
-            return await contxt.edit_msg(error, ExecutionOutcome.ERROR)
-
-        resized_img_path, error = convert_discord_img(img_path, img_size)
-        upload_error = await contxt.upload_emoji_to_server(emote_name, resized_img_path)
-        if not upload_error:
-            return await contxt.edit_msg("Success! Emoji uploaded to Discord.", ExecutionOutcome.SUCCESS)
-        elif isinstance(upload_error, tuple):
-            return await contxt.edit_msg("An error occurred and your image was unable to be uploaded.", ExecutionOutcome.ERROR)
-        else:
-            return await contxt.edit_msg(upload_error, ExecutionOutcome.ERROR)
-        
 
     @commands.command()
     async def convert(self, ctx, emote_name: str = "") -> None:
-        """ Alias for mote/upload """
-        await self.upload(ctx, emote_name)
+        contxt = DiscordCtx(ctx)
 
     @commands.command()
     async def help(self, ctx) -> None:
         commands_msg = textwrap.dedent(f"""\
-            `{BOT_PREFIX}grab <7tv_url> <emote_name>` --> Grab an emote from 7TV and upload to the server.
+            `{BOT_PREFIX}grab <7tv_url> [emote_name]` --> Grab an emote from 7TV and upload to the server.
             `{BOT_PREFIX}upload <emote_name>` --> When provided with an uploaded image, will upload it to the server.
             `{BOT_PREFIX}convert <emote_name>` --> Same as `{BOT_PREFIX}convert`.
             `{BOT_PREFIX}invite` --> Get the invite link for the bot.

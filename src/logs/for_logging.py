@@ -33,7 +33,8 @@ class MyLogger:
         self.logger.addHandler( self.stream_handler)
 
     def log_message(self, ctx: commands.Context, bot_message: str, exec_outcome=ExecutionOutcome.DEFAULT) -> None:
-        log_msg = f"({ctx.guild}, {ctx.channel}) {ctx.message.content} --> {bot_message}"
+        single_line_bot_message = bot_message.replace('\n', ' ')
+        log_msg = f"({ctx.guild}, {ctx.channel}) {ctx.message.content} --> {single_line_bot_message}"
         if exec_outcome == ExecutionOutcome.DEFAULT or exec_outcome == ExecutionOutcome.SUCCESS:
             self.logger.info(log_msg)
         elif exec_outcome == ExecutionOutcome.WARNING:

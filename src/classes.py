@@ -1,13 +1,22 @@
 from discord.ext import commands
 import discord
-from enum import Enum
 
 """ Logging """
 from src.logs import MyLogger, ExecutionOutcome
-from pathlib import Path
-from src.utils.globals import LOG_FILE_PATH
+from src.globals import LOG_FILE_PATH
 my_logger = MyLogger(file_name="bot", log_file_path=LOG_FILE_PATH)
 
+
+class Emote:
+    def __init__(self, name: str, url: str, format: str, animated: bool):
+        self.name = name
+        self.url = url
+        self.format = format
+        self.animated = animated
+
+    def __str__(self):
+        return f"{self.name} - {self.url}"
+    
 
 class DiscordCtx:
     def __init__(self, ctx: commands.Context):
@@ -32,7 +41,7 @@ class DiscordCtx:
         await self.ctx.reply(msg, mention_author=ping)
         my_logger.log_message(self.ctx, message, exec_outcome) # log message
 
-    async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> str|tuple:
+    async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> str:
         """ returns (is_uploaded: bool, ) """
         if not self.has_emoji_perms:
             return "You do not have sufficient permissions to use this command."
@@ -43,18 +52,20 @@ class DiscordCtx:
                 image = img.read()
             await self.ctx.guild.create_custom_emoji(name=emote_name, image=image)
         except discord.errors.HTTPException as e:
-            if 'error code: 30008' in e.args[0]: # if max number of emojis reached
+            err_text = e.args[0]
+            my_logger.log_message(self.ctx, err_text, ExecutionOutcome.ERROR) # log message
+            if 'error code: 30008' in err_text: # if max number of emojis reached
                 return "Maximum number of emojis reached."
-            elif 'error code: 50138' in e.args[0]: # if image too big, return the list
-                return e.args
-            elif 'error code: 50045' in e.args[0]: # if image format is wrong
+            elif 'error code: 50138' in err_text: # image too big
+                return "Emoji too large to be uploaded."
+            elif 'error code: 50045' in err_text: # if image format is wrong
                 return "Internal server error - wrong image format is being used (not your fault)."
-            elif 'error code: 50035' in e.args[0]: # if provided name is too long
-                return "Emote name must be between 2 and 32 characters long."
+            elif 'error code: 50035' in err_text: # if provided name is too long
+                return "Emote name must be between 2 and 32 characters long.\nPlease provide a shorter name to override the 7TV name if not done so already."
             else:
                 return "Unknown HTTP error - unable to upload emoji to Discord."
         return ""
-
+    
     @staticmethod
     def emojify_str(msg, exec_outcome: ExecutionOutcome):
         """

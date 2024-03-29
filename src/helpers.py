@@ -1,56 +1,50 @@
 import requests
 import os
-from src.utils.globals import IMAGES_PATH, MAX_EMOTE_SIZE_BYTES
+from src.globals import IMAGES_PATH, MAX_EMOTE_SIZE_BYTES, BASE_API_URL
+from src.classes import Emote
+import re
 
 
-class Emote:
-    def __init__(self, name: str, url: str, format: str, animated: bool):
-        self.name = name
-        self.url = url
-        self.format = format
-        self.animated = animated
-
-    def __str__(self):
-        return f"{self.name} - {self.url}"
+def is_valid_7tv_url(url: str) -> bool:
+    results = re.search(r"^(https://|http://)7tv.app/emotes/([\w]+)$", url)
+    return bool(results)
 
 
 def get_api_url(command_url: str) -> str:
-    base_api_url = "https://7tv.io/v3/emotes/"
     emote_id = command_url.split("/")[-1]
-    return base_api_url + emote_id
+    return BASE_API_URL + emote_id
 
 
-def retrieve_image_info(api_url: str, suggested_emote_name=None) -> Emote|None:
+def retrieve_image_info(api_url: str, suggested_emote_name=None) -> tuple[Emote|None, str]:
     response = requests.get(api_url)
     if response.status_code != 200:
-        return
+        return None, "Could not load URL."
     data = response.json()
     emote_versions = data["host"]["files"]
-    viable_emote_versions = [version for version in emote_versions if version["format"] == "WEBP" and version["size"] <= MAX_EMOTE_SIZE_BYTES]
-    best_version = None
-    for version in viable_emote_versions:
-        if best_version is None or (version["size"] > best_version["size"] and version["size"] <= MAX_EMOTE_SIZE_BYTES):
+    webp_emote_versions = [version for version in emote_versions if version["format"] == "WEBP"]
+    best_version = webp_emote_versions[0] # default to the smallest
+    for version in webp_emote_versions:
+        # find the largest version that is smaller than the max discord emoji size
+        if (version["size"] > best_version["size"] and version["size"] <= MAX_EMOTE_SIZE_BYTES):
             best_version = version
-    if not best_version:
-        return
     
     emote_name = suggested_emote_name if suggested_emote_name else data["name"]
     is_animated = data["animated"]
     emote_format = "gif" if data["animated"] else "png"
-    image_size_and_format = version["name"].replace("webp", emote_format)
+    image_size_and_format = best_version["name"].replace("webp", emote_format)
     emote_url = f"{data['host']['url']}/{image_size_and_format}"
     if not emote_url.startswith("https:"):
         emote_url = "https:" + emote_url
-    return Emote(
+    emote = Emote(
         name=emote_name,
         url=emote_url,
         animated=is_animated,
         format=emote_format
     )
+    return emote, ""
 
 
-def download_image(img_url: str, format: str) -> tuple[str, str]:
-    print(img_url)
+def download_7tv_image(img_url: str, format: str) -> tuple[str, str]:
     response = requests.get(img_url)
     if response.status_code != 200:
         return "", "Unable to download image."
