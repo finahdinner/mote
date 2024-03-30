@@ -20,7 +20,6 @@ BOT_INVITE_LINK = os.environ["BOT_INVITE_LINK"]
 
 """ Discord """
 MAX_EMOTE_SIZE_BYTES = 262144
-MAX_EMOTE_SIZE_DIMENSIONS = (256, 256)
 
 """ Logging """
 log_dir_path = os.path.join(src_dir_path, "logs")
