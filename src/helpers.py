@@ -3,13 +3,14 @@ import discord
 import re
 import requests
 import os
+import re
+from PIL import Image, ImageSequence
+from io import BytesIO
 from src.globals import (
     IMAGES_PATH,
     MAX_EMOTE_SIZE_BYTES,
     BASE_API_URL
 )
-import re
-from PIL import Image, ImageSequence
 
 
 """ Logging """
@@ -120,12 +121,12 @@ def is_valid_7tv_url(url: str) -> bool:
     return bool(results)
 
 
-def get_api_url(command_url: str) -> str:
+def get_7tv_api_url(command_url: str) -> str:
     emote_id = command_url.split("/")[-1]
     return BASE_API_URL + emote_id
 
 
-def retrieve_image_info(api_url: str, suggested_emote_name=None) -> tuple[Emote|None, str]:
+def retrieve_7tv_image_info(api_url: str, suggested_emote_name=None) -> tuple[Emote|None, str]:
     response = requests.get(api_url)
     if response.status_code != 200:
         return None, "Could not load URL."
@@ -173,20 +174,22 @@ def download_7tv_image(img_url: str, format: str) -> tuple[str, str]:
 
 def download_discord_img(img_url: str) -> tuple[str, int, str]:
     """ returns: (image_path, image_size, error) """
-    result = re.search(r"/\d+/.+\.(png|gif)\?ex=", img_url)
-    if not result:
-        return "", 0, "The regex somehow broke with this Discord image URL!!"
-    file_extension = result.group(1)
-    response = requests.get(img_url)
+    
+    # including a user-agent in case some websites require it
+    response = requests.get(img_url, headers={
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.99 Safari/537.36'
+    })
     if response.status_code != 200:
-        return "", 0, "Unable to download image."
-    downloaded_path = os.path.join(IMAGES_PATH, f"download.{file_extension}")
-    with open(downloaded_path, "wb") as img:
-        img.write(response.content)
+        return "", 0, f"Unable to download image (status code {response.status_code})."
+    img = Image.open(BytesIO(response.content))
+    if not img.format:
+        return "", 0, "Error while processing the image format."
+    downloaded_path = os.path.join(IMAGES_PATH, f"download.{img.format.lower()}")
+    img.save(downloaded_path, save_all=True)
     try:
         img_file_size = os.path.getsize(downloaded_path)
     except OSError:
-        return "", 0, "Error while processing the image."
+        return "", 0, "Error while analysing the image size."
     return downloaded_path, img_file_size, ""
 
 
@@ -208,7 +211,7 @@ def resize_img(img_path: str) -> tuple[str, str]:
             resized_frame = img.resize(optimal_dimensions)
             resized_frames.append(resized_frame)
         try:
-            resized_frames[0].save(img_path, save_all=True, append_images=resized_frames[1:], loop=0)
+            resized_frames[0].save(img_path, save_all=True, append_images=resized_frames[1:], loop=0, optimize=True)
         except Exception as e:
             return "", f"Unable to resize image: {e}"
     else: # not animated
@@ -223,13 +226,15 @@ def resize_img(img_path: str) -> tuple[str, str]:
 
 def get_optimal_frame_size(img_path: str) -> tuple[int, int]:
     img = Image.open(img_path)
-    img_file_size = os.path.getsize(img_path)
     width, height = img.size
-    resize_ratio = img_file_size / MAX_EMOTE_SIZE_BYTES
-    if resize_ratio > 1: # needs resizing
-        width = int(width / (resize_ratio ** 0.5))
-        height = int(height / (resize_ratio ** 0.5))
-    return width, height
+    # set the smaller dimension to 32, and scale the larger dimension from there
+    if width > height:
+        new_height = 32
+        new_width = 32 * (width / height)
+    else: # height >= width
+        new_width = 32
+        new_height = 32 * (height / width)
+    return int(new_width), int(new_height)
 
 
 def convert_discord_img(img_path: str, img_size: int) -> tuple[str, str]:
