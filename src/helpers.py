@@ -58,6 +58,12 @@ class DiscordCtx:
         await self.ctx.reply(msg, mention_author=ping)
         my_logger.log_message(self.ctx, message, exec_outcome)
 
+    async def get_replied_message(self) -> discord.Message | None:
+        referenced_message = self.ctx.message.reference
+        if referenced_message:
+            if referenced_message.message_id:
+                return await self.ctx.message.channel.fetch_message(referenced_message.message_id)
+
     async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> tuple[str, int]:
         """
         returns (error_text, error_code)
@@ -84,8 +90,21 @@ class DiscordCtx:
                 case 50045:
                     err_message = "Emote name must be between 2 and 32 characters long.\nPlease provide a shorter name to override the 7TV name if not done so already."
             return err_message, err_code
-        return "", 0          
-    
+        return "", 0
+
+    @staticmethod
+    async def get_emote_info_from_message(discord_message: discord.Message, selected_emote: str) -> tuple[str, str]:
+        pattern = re.compile(rf"<(a)*:({selected_emote}):(\d+)>", re.IGNORECASE)
+        results = re.search(pattern, discord_message.content)
+        if not results:
+            return "", ""
+        is_animated = bool(results.group(1))
+        emote_name = results.group(2)
+        emote_id = results.group(3)
+        file_extension = "gif" if is_animated else "png"
+        emote_url = f"https://cdn.discordapp.com/emojis/{emote_id}.{file_extension}"
+        return emote_url, emote_name
+
 
 def emojify_str(msg, exec_outcome: ExecutionOutcome, add_loading_icon: bool = False):
     """

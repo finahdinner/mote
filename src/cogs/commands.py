@@ -1,6 +1,7 @@
 from discord.ext import commands
 import textwrap
 import asyncio
+import re
 from src.logs import ExecutionOutcome
 from src.globals import BOT_INVITE_LINK, BOT_PREFIX
 from src.helpers import (
@@ -113,13 +114,66 @@ class Commands(commands.Cog):
         await self.upload(ctx, *args)
 
     @commands.command()
+    async def steal(self, ctx, selected_emote: str = "", given_emote_name: str = "") -> None:
+        """ Steal an emote from a message by replying to it """
+        contxt = DiscordCtx(ctx)
+        if not contxt.has_emoji_perms:
+            return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
+        if not selected_emote:
+            return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}steal <selected_emote> [*new_name]`", ExecutionOutcome.WARNING)
+        
+        # to remove extra chars in case they copy and pasted an emote directly
+        selected_emote_pattern = re.compile(rf"<*(a)*:(\w+):(\d+)>*", re.IGNORECASE)
+        selected_emote_results = re.search(selected_emote_pattern, selected_emote)
+        if selected_emote_results:
+            selected_emote = selected_emote_results.group(2)
+
+        replied_message = await contxt.get_replied_message()
+        if not replied_message:
+            return await contxt.reply_to_user("You must reply to a message to yoink an emote from it.", ExecutionOutcome.WARNING)
+        
+        if given_emote_name:
+            if not given_emote_name.startswith("*"):
+                return await contxt.reply_to_user(f"Try doing `{BOT_PREFIX}steal {selected_emote} *{given_emote_name}`", ExecutionOutcome.WARNING)
+            new_emote_name = given_emote_name.replace("*", "") # replace colons too, in case the user copy pasted them
+            if not new_emote_name.replace("_","").isalnum() or len(new_emote_name) < 2 or len(new_emote_name) > 32: # only alphanums or underscores allowed in names
+                return await contxt.reply_to_user("New emote name must be between 2 and 32 alphanumeric characters long.", ExecutionOutcome.WARNING)
+        
+        await contxt.send_msg("Working on it...", add_loading_icon=True)
+
+        img_url, og_emote_name = await contxt.get_emote_info_from_message(replied_message, selected_emote)
+        if not img_url:
+            return await contxt.edit_msg(f"No emote called {selected_emote} could be found in that message.", ExecutionOutcome.WARNING)
+        
+        emote_name = og_emote_name if not given_emote_name else new_emote_name
+        img_path, img_size, error = download_discord_img(img_url)
+        if error:
+            return await contxt.edit_msg(error, ExecutionOutcome.ERROR)
+        resized_img_path, error = convert_discord_img(img_path, img_size)
+        if error:
+            return await contxt.edit_msg(error, ExecutionOutcome.ERROR)
+        err_text, _ = await contxt.upload_emoji_to_server(emote_name, resized_img_path)
+        if err_text:
+            return await contxt.edit_msg(err_text, ExecutionOutcome.ERROR)
+        return await contxt.edit_msg(f"Success! `{emote_name}` uploaded!", ExecutionOutcome.SUCCESS)
+        
+    @commands.command()
+    async def yoink(self, ctx, given_emote_name: str = "") -> None:
+        """ Alias for mote/steal """
+        await self.steal(ctx, given_emote_name)
+
+    @commands.command()
     async def help(self, ctx) -> None:
         commands_msg = textwrap.dedent(f"""\
             `{BOT_PREFIX}grab <7tv_url> [emote_name]` --> Grab an emote from 7TV and upload to the server.
             `{BOT_PREFIX}upload <link/attachment> <emote_name>` --> Retrieve an image from a link/attachment, and upload to the server.
-            `{BOT_PREFIX}upload <link/attachment> <emote_name>` --> Same as `{BOT_PREFIX}convert`.
+            `{BOT_PREFIX}convert <link/attachment> <emote_name>` --> Same as `{BOT_PREFIX}upload`.
+            `{BOT_PREFIX}steal <selected_emote> [*new_name]` --> Reply to a message to 'steal' a specified emote.
+            `{BOT_PREFIX}yoink <selected_emote> [*new_name]` --> Same as `{BOT_PREFIX}steal`.
             `{BOT_PREFIX}invite` --> Get the invite link for the bot.
             `{BOT_PREFIX}help` --> *commandception intensifies*
+
+            (`<>` = *required* parameters, `[]` = *optional* parameters)
         """)
         await ctx.reply(commands_msg, mention_author=False)
 
