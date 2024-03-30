@@ -22,10 +22,10 @@ my_logger = MyLogger(file_name="bot", log_file_path=LOG_FILE_PATH)
 """ Discord context and messages """
 
 class Emote:
-    def __init__(self, name: str, _7v_id: str, valid_dl_urls: list[str], format: str, animated: bool):
+    def __init__(self, name: str, _7v_id: str, dl_url: str, format: str, animated: bool):
         self.name = name
         self._7v_id = _7v_id
-        self.valid_dl_urls = valid_dl_urls
+        self.dl_url = dl_url
         self.format = format
         self.animated = animated
 
@@ -40,21 +40,22 @@ class DiscordCtx:
         self.bot_message = None # this will be updated to whatever the bot eventually sends
         self.attachments = self.ctx.message.attachments
 
-    async def send_msg(self, message, exec_outcome=ExecutionOutcome.DEFAULT) -> None:
-        self.curr_message = await self.ctx.send(message)
-        my_logger.log_message(self.ctx, message, exec_outcome) # log message
+    async def send_msg(self, message, exec_outcome=ExecutionOutcome.DEFAULT, add_loading_icon: bool = False) -> None:
+        msg = emojify_str(message, exec_outcome, add_loading_icon)
+        self.curr_message = await self.ctx.send(msg)
+        my_logger.log_message(self.ctx, message, exec_outcome)
 
-    async def edit_msg(self, message: str, exec_outcome=ExecutionOutcome.DEFAULT) -> None:
+    async def edit_msg(self, message: str, exec_outcome=ExecutionOutcome.DEFAULT, add_loading_icon: bool = False) -> None:
         if not self.curr_message:
             return
-        msg = emojify_str(message, exec_outcome)
+        msg = emojify_str(message, exec_outcome, add_loading_icon)
         await self.curr_message.edit(content=msg)
-        my_logger.log_message(self.ctx, message, exec_outcome) # log message
+        my_logger.log_message(self.ctx, message, exec_outcome)
 
-    async def reply_to_user(self, message, exec_outcome=ExecutionOutcome.DEFAULT, ping=False) -> None:
+    async def reply_to_user(self, message, exec_outcome=ExecutionOutcome.DEFAULT, ping: bool = False) -> None:
         msg = emojify_str(message, exec_outcome)
         await self.ctx.reply(msg, mention_author=ping)
-        my_logger.log_message(self.ctx, message, exec_outcome) # log message
+        my_logger.log_message(self.ctx, message, exec_outcome)
 
     async def upload_emoji_to_server(self, emote_name: str, image_path: str) -> tuple[str, int]:
         """
@@ -85,20 +86,23 @@ class DiscordCtx:
         return "", 0          
     
 
-def emojify_str(msg, exec_outcome: ExecutionOutcome):
+def emojify_str(msg, exec_outcome: ExecutionOutcome, add_loading_icon: bool = False):
     """
     Given a specified exec_outcome, pre-pend an appropriate emoji (check mark or cross)
     """
+    if add_loading_icon:
+        return f":hourglass_flowing_sand: {msg}"
+
     match exec_outcome.name:
         case "ERROR":
-            emoji_str = ":x: "
+            emoji_str = ":x:"
         case "WARNING":
-            emoji_str = ":warning: "
+            emoji_str = ":warning:"
         case "SUCCESS":
-            emoji_str = ":white_check_mark: "
+            emoji_str = ":white_check_mark:"
         case _:
             emoji_str = ""
-    return emoji_str + msg
+    return f"{emoji_str} {msg}"
     
 
 def get_discord_err_info(err_message: str) -> tuple[str, int]:
@@ -133,28 +137,24 @@ def retrieve_image_info(api_url: str, suggested_emote_name=None) -> tuple[Emote|
     emote_format = "gif" if data["animated"] else "png"
 
     emote_versions = data["host"]["files"]
-    webp_emote_versions = [version for version in emote_versions if version["format"] == "WEBP"]
+    valid_emote_version = None
+    for version in emote_versions:
+        if version.get("format") == "WEBP" and "1x" in version.get("name"):
+            valid_emote_version = version
+            break
+    
+    if not valid_emote_version:
+        return None, "Could not find a suitable image version to download."
 
-    # largest to smallest valid versions, containing at least size 1x
-    valid_versions = [webp_emote_versions[0]]
-    for version in webp_emote_versions[1:]: # assuming sorted 1x to 4x
-        # find the largest version that is smaller than the max discord emoji size
-        if (version["size"] <= MAX_EMOTE_SIZE_BYTES):
-            valid_versions.insert(0, version) # prepend
+    image_size_and_format = valid_emote_version["name"].replace("webp", emote_format)
+    dl_url = f"{data['host']['url']}/{image_size_and_format}"
+    if not dl_url.startswith("https:"):
+        dl_url = "https:" + dl_url
 
-    # store urls for all sizes below the max discord emote size
-    valid_dl_urls = []
-    for version in valid_versions:
-        image_size_and_format = version["name"].replace("webp", emote_format)
-        emote_url = f"{data['host']['url']}/{image_size_and_format}"
-        if not emote_url.startswith("https:"):
-            emote_url = "https:" + emote_url
-        valid_dl_urls.append(emote_url)
-        
     emote = Emote(
         name=emote_name,
         _7v_id=_7v_id,
-        valid_dl_urls=valid_dl_urls,
+        dl_url=dl_url,
         animated=is_animated,
         format=emote_format
     )
