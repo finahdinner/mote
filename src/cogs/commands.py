@@ -96,7 +96,7 @@ class Commands(commands.Cog):
         err_text, _ = await contxt.upload_emoji_to_server(emote_name, resized_img_path)
         if err_text:
             return await contxt.edit_msg(err_text, ExecutionOutcome.ERROR)
-        return await contxt.edit_msg("Success! Emoji uploaded to Discord.", ExecutionOutcome.SUCCESS)
+        return await contxt.edit_msg(f"Success! `{emote_name}` uploaded!", ExecutionOutcome.SUCCESS)
 
     @commands.command()
     async def convert(self, ctx, emote_name: str = "") -> None:
