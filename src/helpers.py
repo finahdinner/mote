@@ -52,8 +52,8 @@ class DiscordCtx:
         await self.curr_message.edit(content=msg)
         my_logger.log_message(self.ctx, message, exec_outcome)
 
-    async def reply_to_user(self, message, exec_outcome=ExecutionOutcome.DEFAULT, ping: bool = False) -> None:
-        msg = emojify_str(message, exec_outcome)
+    async def reply_to_user(self, message, exec_outcome=ExecutionOutcome.DEFAULT, ping: bool = False, add_loading_icon: bool = False) -> None:
+        msg = emojify_str(message, exec_outcome, add_loading_icon)
         await self.ctx.reply(msg, mention_author=ping)
         my_logger.log_message(self.ctx, message, exec_outcome)
 
