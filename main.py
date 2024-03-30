@@ -1,7 +1,7 @@
 import asyncio
 from discord import Intents
 from discord.ext import commands
-from src.utils.globals import (
+from src.globals import (
     DEBUG_MODE,
     BOT_TOKEN,
     BOT_TEST_TOKEN,
