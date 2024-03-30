@@ -68,6 +68,8 @@ class Commands(commands.Cog):
         if providing an image link: args = [image_url, emote_name]
         """
         contxt = DiscordCtx(ctx)
+        if not contxt.has_emoji_perms:
+            return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
         if not args:
             return await contxt.reply_to_user(f"Usage: `{BOT_PREFIX}upload <link/attachment> <emote_name>`", ExecutionOutcome.WARNING)
 
