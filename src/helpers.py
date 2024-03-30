@@ -6,7 +6,6 @@ import os
 from src.globals import (
     IMAGES_PATH,
     MAX_EMOTE_SIZE_BYTES,
-    MAX_EMOTE_SIZE_DIMENSIONS,
     BASE_API_URL
 )
 import re
@@ -200,12 +199,13 @@ def is_animated(filepath: str) -> bool:
 
 
 def resize_img(img_path: str) -> tuple[str, str]:
+    optimal_dimensions = get_optimal_frame_size(img_path)
     if is_animated(img_path): # ie an animated gif
         img = Image.open(img_path)
         resized_frames = []
         for idx in range(img.n_frames):
             img.seek(idx)
-            resized_frame = img.resize(MAX_EMOTE_SIZE_DIMENSIONS)
+            resized_frame = img.resize(optimal_dimensions)
             resized_frames.append(resized_frame)
         try:
             resized_frames[0].save(img_path, save_all=True, append_images=resized_frames[1:], loop=0)
@@ -214,11 +214,22 @@ def resize_img(img_path: str) -> tuple[str, str]:
     else: # not animated
         try:
             img = Image.open(img_path)
-            img.thumbnail(MAX_EMOTE_SIZE_DIMENSIONS, Image.Resampling.LANCZOS)
-            img.save(img_path)
+            img.thumbnail(optimal_dimensions, Image.Resampling.LANCZOS)
+            img.save(img_path, optimize=True)
         except Exception as e:
             return "", f"Unable to resize image: {e}"
     return img_path, ""
+   
+
+def get_optimal_frame_size(img_path: str) -> tuple[int, int]:
+    img = Image.open(img_path)
+    img_file_size = os.path.getsize(img_path)
+    width, height = img.size
+    resize_ratio = img_file_size / MAX_EMOTE_SIZE_BYTES
+    if resize_ratio > 1: # needs resizing
+        width = int(width / (resize_ratio ** 0.5))
+        height = int(height / (resize_ratio ** 0.5))
+    return width, height
 
 
 def convert_discord_img(img_path: str, img_size: int) -> tuple[str, str]:
