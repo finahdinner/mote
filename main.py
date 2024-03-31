@@ -10,16 +10,41 @@ from src.globals import (
 )
 import sys
 import os
+import textwrap
+
+
+class MyHelpCommand(commands.DefaultHelpCommand):
+    def __init__(self):
+        super().__init__()
+
+    async def send_bot_help(self, mapping) -> None:
+        help_msg = "List of commands:\n\n"
+        for cog in mapping:
+            for command in mapping[cog]:
+                help_msg += f"`{command.name}` - {command.help}\n"
+        help_msg += "\nUse `mote/help <command_name>` to see how to use a specific command."
+        await self.get_destination().send(help_msg)
+    
+    async def send_command_help(self, command) -> None:
+        if command.name == "help":
+            help_msg = f"Use `{BOT_PREFIX}help` to show all commands."
+        else:
+            help_msg = textwrap.dedent(f"""
+                {command.help}
+                Usage: `{command.usage}`
+                (`<>` = *required* parameters, `[]` = *optional* parameters)
+            """)
+        await self.get_destination().send(help_msg)
 
 
 class MyBot(commands.Bot):
-    def __init__(self, command_prefix, description, intents):
+    def __init__(self, command_prefix, description, intents, help_command):
         super().__init__(
             command_prefix=command_prefix,
             description=description,
             intents=intents,
-            case_insensitive=True,
-            help_command=None
+            help_command=help_command,
+            case_insensitive=True
         )
 
     async def on_ready(self):
@@ -51,7 +76,8 @@ async def main():
     bot = MyBot(
         command_prefix=commands.when_mentioned_or(*prefixes),
         description="Mote Bot",
-        intents=Intents.all()
+        intents=Intents.all(),
+        help_command=MyHelpCommand()
     )
     await bot.start(token)
 

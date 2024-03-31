@@ -1,5 +1,4 @@
 from discord.ext import commands
-import textwrap
 import asyncio
 import re
 from src.logs import ExecutionOutcome
@@ -20,11 +19,7 @@ class Commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    async def invite(self, ctx) -> None:
-        await ctx.reply(f"Bot invite link:\n{BOT_INVITE_LINK}")
-
-    @commands.command()
+    @commands.command(help="Grab an emote from 7TV and upload to the server.", usage=f"{BOT_PREFIX}grab <7tv_url> [emote_name]")
     async def grab(self, ctx, page_url: str, emote_name: str|None = None) -> None:
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
@@ -62,12 +57,11 @@ class Commands(commands.Cog):
             return await(contxt.edit_msg(err_text, ExecutionOutcome.ERROR))
         return await contxt.edit_msg(f"Success! `{emote.name}` uploaded!", ExecutionOutcome.SUCCESS)
 
-    @commands.command()
-    async def upload(self, ctx, *args) -> None:
-        """
-        if uploading an attachment: args = [emote_name]
-        if providing an image link: args = [image_url, emote_name]
-        """
+    @commands.command(help="Retrieve an image from a link/attachment, and upload to the server.", usage=f"{BOT_PREFIX}upload <link/attachment> <emote_name>")
+    async def upload(self, ctx, *args) -> None:        
+        # if uploading an attachment: args = [emote_name]
+        # if providing an image link: args = [image_url, emote_name]
+
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
             return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
@@ -108,14 +102,11 @@ class Commands(commands.Cog):
             return await contxt.edit_msg(err_text, ExecutionOutcome.ERROR)
         return await contxt.edit_msg(f"Success! `{emote_name}` uploaded!", ExecutionOutcome.SUCCESS)
 
-    @commands.command()
-    async def convert(self, ctx, *args) -> None:
-        """ Alias for mote/upload """
-        await self.upload(ctx, *args)
-
-    @commands.command()
+    @commands.command(
+        help="'Steal' an emote from a discord message, by *replying* to it with the name of the emote.",
+        usage=f"{BOT_PREFIX}steal <selected_emote> [*new_name]"
+    )
     async def steal(self, ctx, selected_emote: str = "", given_emote_name: str = "") -> None:
-        """ Steal an emote from a message by replying to it """
         contxt = DiscordCtx(ctx)
         if not contxt.has_emoji_perms:
             return await contxt.reply_to_user("You do not have sufficient permissions to use this command.", ExecutionOutcome.WARNING)
@@ -156,26 +147,11 @@ class Commands(commands.Cog):
         if err_text:
             return await contxt.edit_msg(err_text, ExecutionOutcome.ERROR)
         return await contxt.edit_msg(f"Success! `{emote_name}` uploaded!", ExecutionOutcome.SUCCESS)
-        
-    @commands.command()
-    async def yoink(self, ctx, given_emote_name: str = "") -> None:
-        """ Alias for mote/steal """
-        await self.steal(ctx, given_emote_name)
 
-    @commands.command()
-    async def help(self, ctx) -> None:
-        commands_msg = textwrap.dedent(f"""\
-            `{BOT_PREFIX}grab <7tv_url> [emote_name]` --> Grab an emote from 7TV and upload to the server.
-            `{BOT_PREFIX}upload <link/attachment> <emote_name>` --> Retrieve an image from a link/attachment, and upload to the server.
-            `{BOT_PREFIX}convert <link/attachment> <emote_name>` --> Same as `{BOT_PREFIX}upload`.
-            `{BOT_PREFIX}steal <selected_emote> [*new_name]` --> Reply to a message to 'steal' a specified emote.
-            `{BOT_PREFIX}yoink <selected_emote> [*new_name]` --> Same as `{BOT_PREFIX}steal`.
-            `{BOT_PREFIX}invite` --> Get the invite link for the bot.
-            `{BOT_PREFIX}help` --> *commandception intensifies*
-
-            (`<>` = *required* parameters, `[]` = *optional* parameters)
-        """)
-        await ctx.reply(commands_msg, mention_author=False)
+    @commands.command(help="Get the invite link for the bot.", usage=f"{BOT_PREFIX}invite")
+    async def invite(self, ctx) -> None:
+        """ mote/grab  """
+        await ctx.reply(f"Bot invite link:\n{BOT_INVITE_LINK}")
 
 
 async def setup(bot):
