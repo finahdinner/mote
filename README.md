@@ -10,11 +10,11 @@ This is a more robust version of my [previous Discord bot of the same name](http
 
 **Bot Usage:**
 
-- `mote/grab <7tv-url> <emote-name>` -- retrieves the emote from the 7tv URL provided, and uploads to the current discord server
-- ``mote/upload <emote-name>`` -- if an attached image is provided, this command uploads the image to the current discord server
-- ``mote/convert <emote-name>`` -- an alias for mote/upload (see above)
-- ``mote/invite`` -- provides an invitation link for the bot
-- ``mote/help`` -- provides usage information<br>
+- `mote/grab <7tv_url> [emote_name]` -- Grab an emote from 7TV and upload to the server.
+- `mote/upload <link/attachment> <emote_name>` -- Retrieve an image from a link/attachment, and upload to the server.
+- `mote/steal <selected_emote> [*new_name]` -- 'Steal' an emote from a discord message, by replying to the message with the name of the emote.
+- `mote/invite` -- Get the invite link for the bot.
+- `mote/help [command_name]` -- provides usage information (of a command if specified).<br>
 
 **The Bot requires the following Discord permissions:**
 - Send Messages
