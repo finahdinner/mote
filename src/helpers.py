@@ -23,10 +23,10 @@ my_logger = MyLogger(file_name="bot", log_file_path=LOG_FILE_PATH)
 """ Discord context and messages """
 
 class Emote:
-    def __init__(self, name: str, _7v_id: str, dl_url: str, format: str, animated: bool):
+    def __init__(self, name: str, _7v_id: str, dl_urls: list[str], format: str, animated: bool):
         self.name = name
         self._7v_id = _7v_id
-        self.dl_url = dl_url
+        self.dl_urls = dl_urls
         self.format = format
         self.animated = animated
 
@@ -157,24 +157,28 @@ def retrieve_7tv_image_info(api_url: str, suggested_emote_name=None) -> tuple[Em
     emote_format = "gif" if data["animated"] else "png"
 
     emote_versions = data["host"]["files"]
-    valid_emote_version = None
-    for version in emote_versions:
-        if version.get("format") == "WEBP" and "1x" in version.get("name"):
-            valid_emote_version = version
-            break
-    
-    if not valid_emote_version:
-        return None, "Could not find a suitable image version to download."
-
-    image_size_and_format = valid_emote_version["name"].replace("webp", emote_format)
-    dl_url = f"{data['host']['url']}/{image_size_and_format}"
-    if not dl_url.startswith("https:"):
-        dl_url = "https:" + dl_url
+    webp_emote_versions = [version for version in emote_versions if version["format"] == "WEBP"]
+    # largest to smallest valid versions, containing at least size 1x
+    if not webp_emote_versions:
+        return None, "No valid image versions available to download."
+    valid_versions = [webp_emote_versions[0]]
+    for version in webp_emote_versions[1:]: # assuming sorted 1x to 4x
+        # find the largest version that is smaller than the max discord emoji size
+        if (version["size"] <= MAX_EMOTE_SIZE_BYTES):
+            valid_versions.insert(0, version) # prepend
+    # store urls for all sizes below the max discord emote size
+    valid_dl_urls = []
+    for version in valid_versions:
+        image_size_and_format = version["name"].replace("webp", emote_format)
+        dl_url = f"{data['host']['url']}/{image_size_and_format}"
+        if not dl_url.startswith("https:"):
+            dl_url = "https:" + dl_url
+        valid_dl_urls.append(dl_url)
 
     emote = Emote(
         name=emote_name,
         _7v_id=_7v_id,
-        dl_url=dl_url,
+        dl_urls=valid_dl_urls,
         animated=is_animated,
         format=emote_format
     )
